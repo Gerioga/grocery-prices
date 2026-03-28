@@ -1,0 +1,14 @@
+.DS_Store
+__pycache__/
+*.pyc
+Additional Data/
+Whole Foods Orders/
+Your Amazon Orders/Media/
+Your Amazon Orders/Digital*
+Your Amazon Orders/Delivery*
+Your Amazon Orders/Cart*
+Your Amazon Orders/Digital*
+*.xlsx
+*.pptx
+build_ppt.py
+build_comparison.py
