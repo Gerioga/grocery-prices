@@ -965,6 +965,45 @@ with tab7:
 
 # ── Tab 8: About ──
 with tab8:
+    # ── Conclusions ──
+    st.subheader("Conclusions")
+
+    # Compute dynamic insights
+    matched_count = sum(1 for i in filtered if i['matched'])
+    estimated_count = len(filtered) - matched_count
+    top_store = max(total_savings_by_store, key=total_savings_by_store.get) if total_savings_by_store else 'N/A'
+    top_sav = total_savings_by_store.get(top_store, 0)
+    top_sav_mo = top_sav / n_months if n_months else 0
+
+    # Category with highest spend
+    cat_totals = defaultdict(float)
+    for item in filtered:
+        cat_totals[item['category']] += item['wf_total_spend']
+    top_cat = max(cat_totals, key=cat_totals.get) if cat_totals else 'N/A'
+
+    # Fish spend
+    fish_items = [i for i in filtered if i['category'] == 'Meat & Seafood'
+                  and any(kw in i['name'].lower() for kw in ['salmon', 'cod', 'swordfish', 'tilapia', 'shrimp', 'scallop', 'tuna'])]
+    fish_spend = sum(i['wf_total_spend'] for i in fish_items)
+    fish_monthly = fish_spend / n_months if n_months else 0
+
+    st.markdown(f"""
+**Key findings from {n_months} months of Whole Foods grocery data ({n_products} products, ${total_spend:,.0f} total):**
+
+1. **Best alternative store: {top_store}** — switching would save an estimated **${top_sav:,.0f} total** (${top_sav_mo:,.0f}/mo), or about {top_sav/total_spend*100:.0f}% of your WF spend.
+
+2. **Biggest spending category: {top_cat}** (${cat_totals[top_cat]:,.0f}). Meat & Seafood and Produce typically drive the largest price gaps between WF and competitors.
+
+3. **Fish & seafood** accounts for ${fish_spend:,.0f} (${fish_monthly:,.0f}/mo). **Update:** fish is now purchased directly from [Alaska Wild Alaska Salmon & Seafood Co](https://prior.fish), bypassing grocery stores entirely — better quality wild-caught fish, likely at comparable or lower per-lb cost than WF farm-raised.
+
+4. **{matched_count} products** have real competitor prices; {estimated_count} use store-tier estimates. The matched items alone represent the most actionable savings.
+
+5. **WF remains competitive** on niche organic items (specialty cheese, artisan products) where alternatives don't carry equivalent brands. The smallest-savings products are mostly items where WF is already price-matched.
+
+**Recommended strategy:** Keep WF for specialty/organic items and convenience. Shift staples (eggs, chicken, produce, pasta) to **{top_store}** or **Trader Joe's**. Buy fish from Alaska Wild.
+""")
+
+    st.markdown("---")
     st.subheader("About This Dashboard")
     st.markdown("""
 ### Data Sources
