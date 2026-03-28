@@ -9,6 +9,23 @@ import plotly.graph_objects as go
 
 st.set_page_config(page_title="Grocery Price Comparison", page_icon="🛒", layout="wide")
 
+# ── Password gate ──
+def check_password():
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+    if st.session_state.authenticated:
+        return True
+    pw = st.text_input("Password", type="password")
+    if pw == "grocery26":
+        st.session_state.authenticated = True
+        st.rerun()
+    elif pw:
+        st.error("Wrong password")
+    return False
+
+if not check_password():
+    st.stop()
+
 # ── Custom CSS ──
 st.markdown("""
 <style>
