@@ -53,17 +53,29 @@ def load_data():
 
     wf_shipping = {'scheduled-houdini', 'scheduled-one-houdini', 'rush-one-houdini'}
 
-    def is_water_or_soda(name):
+    def is_beverage(name):
         n = name.lower()
-        water_soda_kw = ['spring water', 'bottled water', 'deer park', 'sparkling water',
-                         'seltzer', 'coca.cola', 'coke', 'sprite', 'soda', 'pepsi',
-                         'diet coke', 'ginger ale', 'tonic water', 'club soda',
-                         'mountain dew', 'fanta', 'dr pepper', '7.up', 'root beer']
-        return any(re.search(kw, n) for kw in water_soda_kw)
+        # Keep dairy milk (whole milk, half & half, etc.) — those are Dairy & Eggs
+        # Also keep oat milk / oatly / soy milk / almond milk / coconut milk — those go to Dairy & Eggs
+        dairy_kw = ['whole milk', 'half.*half', 'organic valley', 'maple hill', 'grassmilk',
+                    'oat milk', 'oatly', 'soy milk', 'almond milk', 'coconut milk']
+        if any(re.search(kw, n) for kw in dairy_kw):
+            return False
+        bev_kw = ['spring water', 'bottled water', 'deer park', 'sparkling water',
+                  'seltzer', 'coca.cola', 'coke', 'sprite', 'soda', 'pepsi',
+                  'diet coke', 'ginger ale', 'tonic water', 'club soda',
+                  'mountain dew', 'fanta', 'dr pepper', '7.up', 'root beer',
+                  'juice', 'coffee', 'tea\\b', 'wine', 'beer', 'smoothie',
+                  'kombucha', 'coconut water', 'liquid iv', 'hydration',
+                  'prosecco', 'champagne', 'chardonnay', 'pinot', 'merlot',
+                  'cabernet', 'sauvignon', 'rosé', 'aperol', 'lemonade',
+                  'espresso', 'cold brew', 'globerati',
+                  'blue bottle', 'orange juice', 'apple juice', 'limeade']
+        return any(re.search(kw, n) for kw in bev_kw)
 
     wf_rows = [r for r in rows if r.get('Shipping Option', '') in wf_shipping
                and 'bag fee' not in r['Product Name'].lower()
-               and not is_water_or_soda(r['Product Name'])]
+               and not is_beverage(r['Product Name'])]
 
     # Build product summary
     products = {}
@@ -150,7 +162,9 @@ def load_data():
                         'sweet potato', 'plantain', 'melon', 'peach', 'plum', 'cherry', 'fig', 'date'],
             'Dairy & Eggs': ['milk', 'cheese', 'yogurt', 'cream', 'butter', 'egg', 'camembert',
                             'parmesan', 'mozzarella', 'ricotta', 'feta', 'brie', 'gouda', 'cheddar',
-                            'gruyere', 'manchego', 'goat cheese', 'cream cheese', 'sour cream', 'kefir'],
+                            'gruyere', 'manchego', 'goat cheese', 'cream cheese', 'sour cream', 'kefir',
+                            'oat milk', 'oatly', 'soy milk', 'almond milk', 'coconut milk',
+                            'plant butter', 'vegan butter', 'violife'],
             'Meat & Seafood': ['chicken', 'beef', 'salmon', 'tuna', 'shrimp', 'swordfish', 'scallop',
                               'tilapia', 'cod', 'turkey', 'pork', 'steak', 'sausage', 'bacon', 'lamb',
                               'crab', 'lobster', 'mahi', 'trout', 'sardine', 'anchov'],
@@ -159,10 +173,6 @@ def load_data():
                                'cereal', 'granola', 'quinoa', 'lentil', 'bean', 'chickpea', 'nut',
                                'almond', 'peanut', 'cashew', 'honey', 'syrup', 'jam', 'seasoning',
                                'cumin', 'paprika', 'turmeric', 'curry', 'baking'],
-            'Beverages': ['water', 'juice', 'coffee', 'tea', 'wine', 'beer', 'soda', 'coke', 'smoothie',
-                         'kombucha', 'coconut water', 'liquid iv', 'hydration', 'prosecco', 'champagne',
-                         'chardonnay', 'pinot', 'merlot', 'cabernet', 'sauvignon', 'rosé', 'aperol',
-                         'seltzer', 'sparkling', 'lemonade', 'espresso', 'cold brew'],
             'Snacks & Sweets': ['chocolate', 'cookie', 'chip', 'bar', 'candy', 'ice cream', 'pie',
                                'pretzel', 'popcorn', 'brownie', 'cake', 'muffin', 'donut'],
             'Frozen': ['frozen', 'ice', 'popsicle'],
@@ -177,236 +187,294 @@ def load_data():
     # Competitor database
     competitor_db = {
         'organic.*egg.*12|egg.*organic.*12|365.*egg': {
-            'Harris Teeter': (7.99, '12 ct'), 'Aldi': (4.69, '12 ct'), 'Lidl': (4.79, '12 ct'),
-            "Trader Joe's": (6.99, '12 ct'), 'Amazon Fresh': (5.49, '12 ct'), 'Safeway': (6.99, '12 ct'),
+            'Harris Teeter': (7.99, '12 ct'), 'Lidl': (4.79, '12 ct'),
+            'Costco': (3.50, '12 ct equiv'), 'Walmart': (5.28, '12 ct'),
+            'Amazon Fresh': (5.49, '12 ct'), 'Safeway': (6.99, '12 ct'),
         },
         'vital farms.*egg': {
-            'Harris Teeter': (12.29, '12 ct'), "Trader Joe's": (None, ''), 'Amazon Fresh': (11.99, '12 ct'),
-            'Safeway': (7.99, '12 ct'),
+            'Harris Teeter': (12.29, '12 ct'),
+            'Costco': (5.00, '12 ct equiv'), 'Walmart': (7.98, '12 ct'),
+            'Amazon Fresh': (11.99, '12 ct'), 'Safeway': (7.99, '12 ct'),
         },
         'camembert': {
-            'Harris Teeter': (13.99, '8.8 oz'), 'Aldi': (4.99, '8 oz'), "Trader Joe's": (5.99, '8 oz'),
+            'Harris Teeter': (13.99, '8.8 oz'),
+            'Costco': (4.00, '8 oz equiv'), 'Walmart': (5.98, '8 oz'),
             'Amazon Fresh': (9.99, '8 oz'), 'Safeway': (9.99, '8 oz'),
         },
         'violife.*butter|plant butter': {
-            'Harris Teeter': (5.49, '8.8 oz'), "Trader Joe's": (4.49, '8 oz'),
+            'Harris Teeter': (5.49, '8.8 oz'),
+            'Walmart': (4.47, '8 oz'),
             'Amazon Fresh': (4.99, '8.8 oz'), 'Safeway': (5.49, '8.8 oz'),
         },
         'stonyfield.*yogurt|stonyfield.*smoothie': {
-            'Harris Teeter': (5.99, '4-pack'), "Trader Joe's": (4.49, '4-pack'),
+            'Harris Teeter': (5.99, '4-pack'),
+            'Walmart': (4.98, '4-pack'),
             'Amazon Fresh': (5.49, '4-pack'), 'Safeway': (5.49, '4-pack'),
         },
         'clio.*yogurt': {
-            'Harris Teeter': (1.99, '1.76 oz'), 'Amazon Fresh': (1.79, '1.76 oz'),
-            'Safeway': (1.99, '1.76 oz'),
+            'Harris Teeter': (1.99, '1.76 oz'),
+            'Walmart': (1.68, '1.76 oz'),
+            'Amazon Fresh': (1.79, '1.76 oz'), 'Safeway': (1.99, '1.76 oz'),
         },
         'salmon.*fillet.*farm|365.*salmon': {
-            'Harris Teeter': (14.99, 'per lb'), 'Aldi': (8.69, 'per lb'), 'Lidl': (9.99, 'per lb'),
-            "Trader Joe's": (11.99, 'per lb'), 'Amazon Fresh': (12.99, 'per lb'), 'Safeway': (12.99, 'per lb'),
+            'Harris Teeter': (14.99, 'per lb'), 'Lidl': (9.99, 'per lb'),
+            'Costco': (9.99, 'per lb'), 'Walmart': (7.97, 'per lb'),
+            'Amazon Fresh': (12.99, 'per lb'), 'Safeway': (12.99, 'per lb'),
         },
         'sockeye salmon': {
-            'Harris Teeter': (18.99, 'per lb'), "Trader Joe's": (14.99, 'per lb'),
+            'Harris Teeter': (18.99, 'per lb'),
+            'Costco': (12.99, 'per lb'), 'Walmart': (10.97, 'per lb'),
             'Amazon Fresh': (16.99, 'per lb'), 'Safeway': (15.99, 'per lb'),
         },
         'swordfish': {
-            'Harris Teeter': (15.99, 'per lb'), "Trader Joe's": (12.99, '12 oz'),
+            'Harris Teeter': (15.99, 'per lb'),
+            'Costco': (13.99, 'per lb'), 'Walmart': (11.97, 'per lb'),
             'Amazon Fresh': (14.99, '12 oz'), 'Safeway': (19.99, 'per lb'),
         },
         'scallop': {
-            'Harris Teeter': (19.99, '12 oz'), 'Aldi': (9.99, '12 oz'), "Trader Joe's": (11.99, 'per lb'),
+            'Harris Teeter': (19.99, '12 oz'),
+            'Costco': (5.62, '12 oz equiv'), 'Walmart': (9.97, '12 oz'),
             'Amazon Fresh': (16.99, '12 oz'), 'Safeway': (18.99, '16 oz'),
         },
         'tilapia': {
-            'Harris Teeter': (8.99, 'per lb'), 'Aldi': (5.49, 'per lb'), 'Lidl': (5.99, 'per lb'),
-            "Trader Joe's": (6.99, 'per lb'), 'Amazon Fresh': (7.99, '32 oz'), 'Safeway': (7.99, 'per lb'),
+            'Harris Teeter': (8.99, 'per lb'), 'Lidl': (5.99, 'per lb'),
+            'Costco': (5.99, 'per lb'), 'Walmart': (4.47, 'per lb'),
+            'Amazon Fresh': (7.99, '32 oz'), 'Safeway': (7.99, 'per lb'),
         },
         'chicken.*leg|chicken.*thigh': {
-            'Harris Teeter': (4.99, 'per lb'), 'Aldi': (2.49, 'per lb'), 'Lidl': (1.99, 'per lb'),
-            "Trader Joe's": (3.99, 'per lb'), 'Amazon Fresh': (4.49, 'per lb'), 'Safeway': (6.49, 'per lb'),
+            'Harris Teeter': (4.99, 'per lb'), 'Lidl': (1.99, 'per lb'),
+            'Costco': (2.99, 'per lb'), 'Walmart': (1.97, 'per lb'),
+            'Amazon Fresh': (4.49, 'per lb'), 'Safeway': (6.49, 'per lb'),
         },
         'beef.*chuck|beef.*stew|short rib': {
-            'Harris Teeter': (9.99, 'per lb'), 'Aldi': (7.49, 'per lb'), 'Lidl': (7.99, 'per lb'),
-            "Trader Joe's": (8.99, 'per lb'), 'Amazon Fresh': (9.49, 'per lb'), 'Safeway': (7.99, 'per lb'),
+            'Harris Teeter': (9.99, 'per lb'), 'Lidl': (7.99, 'per lb'),
+            'Costco': (7.99, 'per lb'), 'Walmart': (6.47, 'per lb'),
+            'Amazon Fresh': (9.49, 'per lb'), 'Safeway': (7.99, 'per lb'),
         },
         'cod.*fillet|365.*cod': {
-            'Harris Teeter': (12.99, 'per lb'), 'Aldi': (7.99, 'per lb'), "Trader Joe's": (9.99, 'per lb'),
+            'Harris Teeter': (12.99, 'per lb'),
+            'Costco': (8.99, 'per lb'), 'Walmart': (7.47, 'per lb'),
             'Amazon Fresh': (11.99, '32 oz'), 'Safeway': (10.99, 'per lb'),
         },
         'shrimp': {
-            'Harris Teeter': (12.99, 'per lb'), 'Aldi': (8.49, 'per lb'), 'Lidl': (8.99, 'per lb'),
-            "Trader Joe's": (9.99, 'per lb'), 'Amazon Fresh': (11.99, '32 oz'), 'Safeway': (11.99, 'per lb'),
+            'Harris Teeter': (12.99, 'per lb'), 'Lidl': (8.99, 'per lb'),
+            'Costco': (4.50, 'per lb equiv'), 'Walmart': (7.47, 'per lb'),
+            'Amazon Fresh': (11.99, '32 oz'), 'Safeway': (11.99, 'per lb'),
         },
         'organic.*zucchini|zucchini.*organic': {
-            'Harris Teeter': (2.39, 'per lb'), 'Aldi': (1.69, 'per lb'), 'Lidl': (1.79, 'per lb'),
-            "Trader Joe's": (2.49, 'per lb'), 'Amazon Fresh': (1.99, 'per lb'),
+            'Harris Teeter': (2.39, 'per lb'), 'Lidl': (1.79, 'per lb'),
+            'Walmart': (1.97, 'per lb'),
+            'Amazon Fresh': (1.99, 'per lb'),
             "MOM's Organic": (3.49, 'per lb'), 'Safeway': (3.79, 'per lb'),
         },
         'organic.*raspberry|raspberry.*organic|red raspberry': {
-            'Harris Teeter': (5.49, '6 oz'), 'Aldi': (3.99, '6 oz'), 'Lidl': (3.49, '6 oz'),
-            "Trader Joe's": (4.49, '6 oz'), 'Amazon Fresh': (4.49, '6 oz'),
+            'Harris Teeter': (5.49, '6 oz'), 'Lidl': (3.49, '6 oz'),
+            'Costco': (3.00, '6 oz equiv'), 'Walmart': (3.97, '6 oz'),
+            'Amazon Fresh': (4.49, '6 oz'),
             "MOM's Organic": (3.49, '6 oz'), 'Safeway': (5.99, '6 oz'),
         },
         'frozen.*raspberry|raspberry.*frozen|365.*raspberry': {
-            'Harris Teeter': (3.99, '10 oz'), 'Aldi': (2.99, '12 oz'), "Trader Joe's": (2.99, '12 oz'),
+            'Harris Teeter': (3.99, '10 oz'),
+            'Costco': (1.41, '10 oz equiv'), 'Walmart': (2.97, '12 oz'),
             'Amazon Fresh': (3.49, '10 oz'), 'Safeway': (4.99, '10 oz'),
         },
         'organic.*fuji|fuji.*apple|organic.*apple': {
-            'Harris Teeter': (2.49, 'per lb'), 'Aldi': (1.99, 'per lb'), 'Lidl': (1.69, 'per lb'),
-            "Trader Joe's": (3.99, '2 lb bag'), 'Amazon Fresh': (2.29, 'per lb'), 'Safeway': (2.49, 'per lb'),
+            'Harris Teeter': (2.49, 'per lb'), 'Lidl': (1.69, 'per lb'),
+            'Costco': (1.40, 'per lb equiv'), 'Walmart': (1.67, 'per lb'),
+            'Amazon Fresh': (2.29, 'per lb'), 'Safeway': (2.49, 'per lb'),
         },
         'organic.*shallot|shallot': {
-            'Harris Teeter': (3.49, 'each'), "Trader Joe's": (0.99, 'each'),
+            'Harris Teeter': (3.49, 'each'),
+            'Walmart': (2.47, 'each'),
             'Amazon Fresh': (2.99, 'each'), "MOM's Organic": (4.99, 'per lb'), 'Safeway': (2.99, '3 oz'),
         },
         'guacamole': {
-            'Harris Teeter': (4.99, '8 oz'), 'Aldi': (3.49, '8 oz'), "Trader Joe's": (3.99, '8 oz'),
+            'Harris Teeter': (4.99, '8 oz'),
+            'Costco': (2.25, '8 oz equiv'), 'Walmart': (3.47, '8 oz'),
             'Amazon Fresh': (5.49, '8 oz'), "MOM's Organic": (8.29, '~9 oz'), 'Safeway': (4.49, '8 oz'),
         },
         'lime.*regular|lime.*conventional': {
-            'Harris Teeter': (0.33, 'each'), 'Aldi': (0.25, 'each'), 'Lidl': (0.25, 'each'),
-            "Trader Joe's": (0.25, 'each'), 'Amazon Fresh': (0.35, 'each'), 'Safeway': (0.5, 'each'),
+            'Harris Teeter': (0.33, 'each'), 'Lidl': (0.25, 'each'),
+            'Costco': (0.17, 'each equiv'), 'Walmart': (0.25, 'each'),
+            'Amazon Fresh': (0.35, 'each'), 'Safeway': (0.5, 'each'),
         },
         'cilantro': {
-            'Harris Teeter': (1.49, 'bunch'), 'Aldi': (0.89, 'bunch'), 'Lidl': (0.79, 'bunch'),
-            "Trader Joe's": (0.99, 'bunch'), 'Amazon Fresh': (1.49, 'bunch'), 'Safeway': (1.29, 'bunch'),
+            'Harris Teeter': (1.49, 'bunch'), 'Lidl': (0.79, 'bunch'),
+            'Walmart': (0.68, 'bunch'),
+            'Amazon Fresh': (1.49, 'bunch'), 'Safeway': (1.29, 'bunch'),
         },
         'spearmint|mint.*organic': {
-            'Harris Teeter': (2.49, '0.5 oz'), "Trader Joe's": (1.99, 'bunch'),
+            'Harris Teeter': (2.49, '0.5 oz'),
+            'Walmart': (1.97, 'bunch'),
             'Amazon Fresh': (2.49, '0.5 oz'), "MOM's Organic": (2.99, '0.5 oz'), 'Safeway': (2.99, '0.5 oz'),
         },
         'organic.*blackberr|blackberr.*organic': {
-            'Harris Teeter': (4.99, '6 oz'), 'Aldi': (3.49, '6 oz'), "Trader Joe's": (3.99, '6 oz'),
+            'Harris Teeter': (4.99, '6 oz'),
+            'Costco': (3.00, '6 oz equiv'), 'Walmart': (3.47, '6 oz'),
             'Amazon Fresh': (4.49, '6 oz'), "MOM's Organic": (4.99, '6 oz'), 'Safeway': (5.99, '6 oz'),
         },
         'blueberr.*pint|blueberr.*fresh|blueberr(?!.*frozen)': {
-            'Harris Teeter': (4.99, '1 pint'), 'Aldi': (3.49, '1 pint'), "Trader Joe's": (3.99, '1 pint'),
+            'Harris Teeter': (4.99, '1 pint'),
+            'Costco': (4.66, '1 pint equiv'), 'Walmart': (3.47, '1 pint'),
             'Amazon Fresh': (4.49, '1 pint'), "MOM's Organic": (8.99, '1 pint'), 'Safeway': (4.99, '1 pint'),
         },
         'organic.*bell pepper|red bell pepper|yellow bell pepper': {
-            'Harris Teeter': (3.99, 'each'), 'Aldi': (1.29, 'each'), "Trader Joe's": (2.49, 'each'),
+            'Harris Teeter': (3.99, 'each'),
+            'Costco': (1.00, 'each equiv'), 'Walmart': (1.97, 'each'),
             'Amazon Fresh': (2.99, 'each'), "MOM's Organic": (6.99, 'per lb'), 'Safeway': (3.49, 'each'),
         },
         'organic.*green.*pepper|green.*pepper': {
-            'Harris Teeter': (1.99, 'each'), 'Aldi': (0.89, 'each'), "Trader Joe's": (1.49, 'each'),
+            'Harris Teeter': (1.99, 'each'),
+            'Walmart': (0.97, 'each'),
             'Amazon Fresh': (1.49, 'each'), "MOM's Organic": (2.99, 'per lb'), 'Safeway': (1.79, 'each'),
         },
         'mini cucumber|organic.*cucumber': {
-            'Harris Teeter': (3.99, '1 lb'), 'Aldi': (2.99, '1 lb'), "Trader Joe's": (2.99, '1 lb'),
+            'Harris Teeter': (3.99, '1 lb'),
+            'Costco': (2.00, '1 lb equiv'), 'Walmart': (2.47, '1 lb'),
             'Amazon Fresh': (3.99, '1 lb'), "MOM's Organic": (3.99, '1 lb'), 'Safeway': (3.49, '1 lb'),
         },
         'tomato.*on.*vine|heirloom.*tomato|organic.*tomato': {
-            'Harris Teeter': (3.49, 'per lb'), 'Aldi': (2.49, 'per lb'), "Trader Joe's": (3.99, 'per lb'),
+            'Harris Teeter': (3.49, 'per lb'),
+            'Costco': (1.66, 'per lb equiv'), 'Walmart': (1.97, 'per lb'),
             'Amazon Fresh': (3.49, 'per lb'), "MOM's Organic": (4.99, 'per lb'), 'Safeway': (2.99, 'per lb'),
         },
         'baby bella|mushroom.*bella|phillips.*mushroom': {
-            'Harris Teeter': (3.49, '8 oz'), 'Aldi': (1.99, '8 oz'), "Trader Joe's": (2.49, '8 oz'),
+            'Harris Teeter': (3.49, '8 oz'),
+            'Costco': (1.66, '8 oz equiv'), 'Walmart': (1.98, '8 oz'),
             'Amazon Fresh': (2.99, '8 oz'), "MOM's Organic": (3.99, '8 oz'), 'Safeway': (2.99, '8 oz'),
         },
         'organic valley.*whole milk|maple hill.*whole milk|whole milk.*organic': {
-            'Harris Teeter': (5.99, 'half gal'), 'Aldi': (4.29, 'half gal'),
-            "Trader Joe's": (4.49, 'half gal'), 'Amazon Fresh': (5.49, 'half gal'),
+            'Harris Teeter': (5.99, 'half gal'),
+            'Costco': (4.00, 'half gal equiv'), 'Walmart': (4.72, 'half gal'),
+            'Amazon Fresh': (5.49, 'half gal'),
             "MOM's Organic": (4.29, 'half gal'), 'Safeway': (5.49, 'half gal'),
         },
         'organic valley.*half.*half|grassmilk.*half.*half|half.*half.*organic': {
-            'Harris Teeter': (5.49, 'pint'), "Trader Joe's": (3.99, 'pint'),
+            'Harris Teeter': (5.49, 'pint'),
+            'Walmart': (3.97, 'pint'),
             'Amazon Fresh': (4.99, 'pint'), "MOM's Organic": (5.79, 'pint'), 'Safeway': (4.99, 'pint'),
         },
         'organic.*carrot|loose carrot': {
-            'Harris Teeter': (1.99, '1 lb bag'), 'Aldi': (1.29, '1 lb bag'),
-            "Trader Joe's": (1.29, '1 lb bag'), 'Amazon Fresh': (1.49, '1 lb bag'),
+            'Harris Teeter': (1.99, '1 lb bag'),
+            'Costco': (1.00, '1 lb equiv'), 'Walmart': (1.27, '1 lb bag'),
+            'Amazon Fresh': (1.49, '1 lb bag'),
             "MOM's Organic": (1.99, '1 lb bag'), 'Safeway': (1.79, '1 lb bag'),
         },
         'organic.*thyme|organic.*rosemary|organic.*herb': {
-            'Harris Teeter': (2.99, '0.5 oz'), "Trader Joe's": (1.99, 'bunch'),
+            'Harris Teeter': (2.99, '0.5 oz'),
+            'Walmart': (1.97, 'bunch'),
             'Amazon Fresh': (2.49, '0.5 oz'), "MOM's Organic": (2.99, '0.5 oz'), 'Safeway': (2.99, '0.5 oz'),
         },
         'baby spinach|organic.*spinach.*salad': {
-            'Harris Teeter': (3.99, '5 oz'), 'Aldi': (2.69, '5 oz'), "Trader Joe's": (2.49, '5 oz'),
+            'Harris Teeter': (3.99, '5 oz'),
+            'Costco': (1.56, '5 oz equiv'), 'Walmart': (2.47, '5 oz'),
             'Amazon Fresh': (3.49, '5 oz'), "MOM's Organic": (4.99, '5 oz'), 'Safeway': (3.49, '5 oz'),
         },
         'garlic.*bulb|garlic ali|christopher.*garlic': {
-            'Harris Teeter': (1.99, '3 ct'), 'Aldi': (0.79, '3 ct'), "Trader Joe's": (0.99, '3 ct'),
+            'Harris Teeter': (1.99, '3 ct'),
+            'Costco': (0.50, '3 ct equiv'), 'Walmart': (0.97, '3 ct'),
             'Amazon Fresh': (1.49, '3 ct'), "MOM's Organic": (6.99, 'per lb'), 'Safeway': (1.49, '3 ct'),
         },
         'kettle.*chip|potato chip': {
-            'Harris Teeter': (4.49, '5 oz'), 'Aldi': (2.49, '5 oz'), "Trader Joe's": (2.99, '5 oz'),
+            'Harris Teeter': (4.49, '5 oz'),
+            'Costco': (1.59, '5 oz equiv'), 'Walmart': (2.98, '8 oz'),
             'Amazon Fresh': (4.29, '5 oz'), "MOM's Organic": (4.29, '5 oz'), 'Safeway': (3.99, '5 oz'),
         },
         'tortilla chip|corn.*chip': {
-            'Harris Teeter': (3.99, '12 oz'), 'Aldi': (1.99, '12 oz'), "Trader Joe's": (2.99, '12 oz'),
+            'Harris Teeter': (3.99, '12 oz'),
+            'Costco': (2.25, '12 oz equiv'), 'Walmart': (2.78, '13 oz'),
             'Amazon Fresh': (3.49, '12 oz'), "MOM's Organic": (4.99, '12 oz'), 'Safeway': (3.49, '10 oz'),
         },
         'goat cheese': {
-            'Harris Teeter': (5.99, '4 oz'), 'Aldi': (2.99, '4 oz'), "Trader Joe's": (3.99, '4 oz'),
+            'Harris Teeter': (5.99, '4 oz'),
+            'Costco': (2.66, '4 oz equiv'), 'Walmart': (3.47, '4 oz'),
             'Amazon Fresh': (4.99, '4 oz'), "MOM's Organic": (5.49, '4 oz'), 'Safeway': (5.49, '4 oz'),
         },
         '365.*spaghetti|organic.*spaghetti': {
-            'Harris Teeter': (1.99, '16 oz'), 'Aldi': (1.29, '16 oz'), 'Lidl': (0.92, '16 oz'),
-            "Trader Joe's": (1.49, '16 oz'), 'Amazon Fresh': (1.79, '16 oz'), 'Safeway': (1.79, '16 oz'),
+            'Harris Teeter': (1.99, '16 oz'), 'Lidl': (0.92, '16 oz'),
+            'Costco': (1.17, '16 oz equiv'), 'Walmart': (1.18, '16 oz'),
+            'Amazon Fresh': (1.79, '16 oz'), 'Safeway': (1.79, '16 oz'),
         },
         '365.*oat|organic.*rolled oat': {
-            'Harris Teeter': (3.69, '18 oz'), 'Aldi': (2.99, '18 oz'), "Trader Joe's": (3.49, '32 oz'),
+            'Harris Teeter': (3.69, '18 oz'),
+            'Costco': (0.90, '18 oz equiv'), 'Walmart': (2.98, '18 oz'),
             'Amazon Fresh': (4.99, '42 oz'), 'Safeway': (3.49, '18 oz'),
         },
         '365.*garlic.*peeled|organic.*peeled garlic': {
-            'Harris Teeter': (4.49, '6 oz'), 'Aldi': (2.99, '6 oz'), "Trader Joe's": (2.99, '6 oz'),
+            'Harris Teeter': (4.49, '6 oz'),
+            'Costco': (0.75, '6 oz equiv'), 'Walmart': (2.47, '6 oz'),
             'Amazon Fresh': (3.99, '6 oz'), "MOM's Organic": (3.04, '~6 oz'), 'Safeway': (2.49, '6 oz'),
         },
         'couscous': {
-            'Harris Teeter': (2.99, '5.8 oz'), 'Aldi': (1.49, '5.8 oz'), "Trader Joe's": (1.99, '12 oz'),
+            'Harris Teeter': (2.99, '5.8 oz'),
+            'Walmart': (1.87, '5.8 oz'),
             'Amazon Fresh': (2.99, '5.8 oz'), 'Safeway': (2.79, '5.8 oz'),
         },
         'badia.*garlic|minced garlic': {
-            'Harris Teeter': (2.49, '8 oz'), 'Aldi': (1.99, '8 oz'), "Trader Joe's": (2.29, '8 oz'),
+            'Harris Teeter': (2.49, '8 oz'),
+            'Costco': (0.83, '8 oz equiv'), 'Walmart': (1.98, '8 oz'),
             'Amazon Fresh': (2.49, '8 oz'), 'Safeway': (3.99, '8 oz'),
         },
         'pie.*dough|pie.*crust|wholly wholesome': {
-            'Harris Teeter': (5.99, '2-pack'), 'Aldi': (2.99, '2-pack'), "Trader Joe's": (3.99, '2-pack'),
+            'Harris Teeter': (5.99, '2-pack'),
+            'Walmart': (3.47, '2-pack'),
             'Amazon Fresh': (6.99, '2-pack'), 'Safeway': (3.99, '2-pack'),
         },
-        'oatly.*barista|oat.*milk': {
-            'Harris Teeter': (5.49, '32 oz'), 'Aldi': (3.49, '32 oz'), "Trader Joe's": (4.49, '32 oz'),
-            'Amazon Fresh': (4.99, '32 oz'), "MOM's Organic": (6.29, '32 oz'), 'Safeway': (5.29, '32 oz'),
+        'oatly|oat milk': {
+            'Costco': (1.50, '32 oz equiv'), 'Walmart': (3.97, '32 oz'),
+            'Amazon Fresh': (4.99, '32 oz'), 'Safeway': (4.99, '32 oz'),
         },
-        '365.*coconut water|organic coconut water': {
-            'Harris Teeter': (3.99, '33.8 oz'), 'Aldi': (2.49, '33.8 oz'),
-            "Trader Joe's": (3.29, '33.8 oz'), 'Amazon Fresh': (3.99, '33.8 oz'), 'Safeway': (4.29, '33.8 oz'),
+        'coconut water': {
+            'Costco': (1.08, '33.8 oz equiv'), 'Walmart': (3.28, '33.8 oz'),
+            'Amazon Fresh': (4.49, '33.8 oz'), 'Safeway': (4.99, '33.8 oz'),
         },
         'liquid iv': {
-            'Harris Teeter': (2.49, 'single'), 'Amazon Fresh': (1.99, 'single'), 'Safeway': (2.49, 'single'),
+            'Costco': (0.83, 'single equiv'), 'Walmart': (1.98, 'single'),
+            'Amazon Fresh': (6.99, '6 ct'), 'Safeway': (7.49, '6 ct'),
         },
-        'blue bottle.*coffee|cold brew': {
-            'Harris Teeter': (3.99, '8 oz'), 'Aldi': (2.49, '8 oz'), "Trader Joe's": (2.99, '8 oz'),
-            'Amazon Fresh': (3.99, '8 oz'), 'Safeway': (3.99, '8 oz'),
+        'blue bottle|cold brew': {
+            'Walmart': (2.97, '8 oz'),
+            'Amazon Fresh': (3.49, '8 oz'), 'Safeway': (3.99, '8 oz'),
         },
-        'globerati|chardonnay|pinot grigio': {
-            'Harris Teeter': (12.99, '750ml'), 'Aldi': (5.99, '750ml'), 'Lidl': (5.49, '750ml'),
-            "Trader Joe's": (6.99, '750ml'), 'Amazon Fresh': (10.99, '750ml'), 'Safeway': (10.99, '750ml'),
+        'wine|prosecco|champagne|chardonnay|pinot|merlot|cabernet': {
+            'Costco': (8.99, '750ml'), 'Walmart': (5.97, '750ml'),
+            'Safeway': (9.99, '750ml'),
+        },
+        'coke.*mini|mini.*coke|coca.cola.*mini': {
+            'Costco': (4.33, '10-pack equiv'), 'Walmart': (4.48, '10-pack'),
+            'Amazon Fresh': (5.99, '10-pack'), 'Safeway': (6.49, '10-pack'),
         },
         'endangered species.*chocolate|dark chocolate.*espresso': {
-            'Harris Teeter': (3.99, '3 oz'), 'Aldi': (2.49, '3 oz'), "Trader Joe's": (2.49, '3.5 oz'),
+            'Harris Teeter': (3.99, '3 oz'),
+            'Walmart': (2.97, '3 oz'),
             'Amazon Fresh': (3.69, '3 oz'), 'Safeway': (3.79, '3 oz'),
         },
         'lindt.*chocolate': {
-            'Harris Teeter': (3.99, '4.4 oz'), 'Aldi': (2.99, '4.4 oz'), "Trader Joe's": (3.49, '3.5 oz'),
+            'Harris Teeter': (3.99, '4.4 oz'),
+            'Costco': (2.00, '4.4 oz equiv'), 'Walmart': (3.48, '4.4 oz'),
             'Amazon Fresh': (3.99, '4.4 oz'), 'Safeway': (4.49, '3.5 oz'),
         },
         'brown butter.*cookie': {
-            'Harris Teeter': (2.49, '2 oz'), 'Amazon Fresh': (1.99, '2 oz'), 'Safeway': (2.99, '2 oz'),
+            'Harris Teeter': (2.49, '2 oz'),
+            'Walmart': (1.98, '2 oz'),
+            'Amazon Fresh': (1.99, '2 oz'), 'Safeway': (2.99, '2 oz'),
         },
         'happy belly.*frozen|amazon.*frozen onion': {
-            'Harris Teeter': (1.49, '12 oz'), 'Aldi': (0.99, '12 oz'), 'Lidl': (0.99, '12 oz'),
-            "Trader Joe's": (1.49, '12 oz'), 'Amazon Fresh': (0.79, '12 oz'), 'Safeway': (1.49, '12 oz'),
+            'Harris Teeter': (1.49, '12 oz'), 'Lidl': (0.99, '12 oz'),
+            'Walmart': (0.88, '12 oz'),
+            'Amazon Fresh': (0.79, '12 oz'), 'Safeway': (1.49, '12 oz'),
         },
         'elderberry|immunity.*shot|vive organic': {
-            'Harris Teeter': (3.99, '2 oz'), "Trader Joe's": (2.99, '2 oz'),
+            'Harris Teeter': (3.99, '2 oz'),
+            'Walmart': (2.97, '2 oz'),
             'Amazon Fresh': (3.49, '2 oz'), 'Safeway': (3.49, '2 oz'),
         },
     }
 
-    stores = ['Harris Teeter', 'Lidl', "Trader Joe's", 'Amazon Fresh', "MOM's Organic", 'Safeway']
+    stores = ['Harris Teeter', 'Lidl', 'Costco', 'Walmart', 'Amazon Fresh', "MOM's Organic", 'Safeway']
     store_discount = {
-        'Harris Teeter': 0.95, 'Lidl': 0.70, "Trader Joe's": 0.80,
+        'Harris Teeter': 0.95, 'Lidl': 0.70,
+        'Costco': 0.65, 'Walmart': 0.72,
         'Amazon Fresh': 0.85, "MOM's Organic": 0.92, 'Safeway': 0.90,
     }
 
@@ -534,9 +602,9 @@ st.divider()
 # ══════════════════════════════════════
 # TAB LAYOUT
 # ══════════════════════════════════════
-tab1, tab2, tab3, tab5, tab6, tab7, tab8 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "Store Savings", "Product Comparison", "Category Breakdown",
-    "Price Explorer", "Top Savings", "Essentials", "About"
+    "Meat & Produce", "Price Explorer", "Top Savings", "Essentials", "About"
 ])
 
 # ── Tab 1: Store Savings ──
@@ -709,6 +777,155 @@ with tab3:
                       texttemplate='%{text}')
     fig3.update_layout(height=400)
     st.plotly_chart(fig3, use_container_width=True)
+
+# ── Tab 4: Meat & Produce Focus ──
+with tab4:
+    st.subheader("Meat/Seafood & Produce — Price Comparison")
+    st.caption("Side-by-side comparison of protein and fresh produce prices across stores")
+
+    meat_items = [i for i in all_items if i['category'] == 'Meat & Seafood']
+    produce_items = [i for i in all_items if i['category'] == 'Produce']
+
+    meat_items.sort(key=lambda x: -x['wf_total_spend'])
+    produce_items.sort(key=lambda x: -x['wf_total_spend'])
+
+    # KPIs
+    meat_spend = sum(i['wf_total_spend'] for i in meat_items)
+    produce_spend = sum(i['wf_total_spend'] for i in produce_items)
+    meat_sav = sum(i['savings_amt'] for i in meat_items)
+    produce_sav = sum(i['savings_amt'] for i in produce_items)
+    combined_spend = meat_spend + produce_spend
+    combined_sav = meat_sav + produce_sav
+
+    mc1, mc2, mc3, mc4, mc5, mc6 = st.columns(6)
+    mc1.metric("Meat/Seafood Spend", f"${meat_spend:,.0f}")
+    mc2.metric("Meat Savings", f"${meat_sav:,.0f}")
+    mc3.metric("Produce Spend", f"${produce_spend:,.0f}")
+    mc4.metric("Produce Savings", f"${produce_sav:,.0f}")
+    mc5.metric("Combined Spend", f"${combined_spend:,.0f}")
+    mc6.metric("Combined Savings", f"${combined_sav:,.0f}")
+
+    st.markdown("---")
+
+    # Build comparison table
+    def build_mp_table(items, section_name):
+        rows = []
+        for item in items:
+            row = {
+                'Product': item['name'][:55],
+                'WF Price': item['wf_avg_price'],
+                'Qty': item['qty_purchased'],
+                'WF Total': item['wf_total_spend'],
+            }
+            for store in stores:
+                p = item.get(f'{store}_price')
+                row[store] = p
+            row['Cheapest'] = item['cheapest_store']
+            row['Savings %'] = item['savings_pct']
+            rows.append(row)
+        return pd.DataFrame(rows)
+
+    # Meat & Seafood section
+    st.markdown("### Meat & Seafood")
+    if meat_items:
+        meat_df = build_mp_table(meat_items, 'Meat & Seafood')
+        format_dict = {'WF Price': '${:.2f}', 'WF Total': '${:.2f}', 'Savings %': '{:.1%}'}
+        for store in stores:
+            format_dict[store] = '${:.2f}'
+        st.dataframe(
+            meat_df.style.format(format_dict, na_rep='—'),
+            height=400, use_container_width=True
+        )
+
+        # Chart: WF vs cheapest for top meat items
+        top_meat = meat_df.head(10)
+        if not top_meat.empty:
+            fig_meat = go.Figure()
+            fig_meat.add_trace(go.Bar(
+                name='Whole Foods', y=top_meat['Product'], x=top_meat['WF Price'],
+                orientation='h', marker_color='#1F3864',
+                text=top_meat['WF Price'].apply(lambda x: f'${x:.2f}'), textposition='inside',
+            ))
+            # Find cheapest price per item
+            cheapest_prices = []
+            cheapest_labels = []
+            for _, r in top_meat.iterrows():
+                best_p = r['WF Price']
+                best_s = 'WF'
+                for store in stores:
+                    if pd.notna(r.get(store)) and r[store] < best_p:
+                        best_p = r[store]
+                        best_s = store
+                cheapest_prices.append(best_p)
+                cheapest_labels.append(f'${best_p:.2f} ({best_s})')
+            fig_meat.add_trace(go.Bar(
+                name='Cheapest Alt', y=top_meat['Product'], x=cheapest_prices,
+                orientation='h', marker_color='#548235',
+                text=cheapest_labels, textposition='inside',
+            ))
+            fig_meat.update_layout(
+                title='Top Meat & Seafood: WF vs Cheapest',
+                barmode='group', xaxis=dict(title='Price ($)', gridcolor='#eee'),
+                yaxis=dict(autorange='reversed'),
+                height=450, margin=dict(l=250),
+                legend=dict(orientation='h', yanchor='bottom', y=1.02),
+            )
+            st.plotly_chart(fig_meat, use_container_width=True)
+    else:
+        st.info("No Meat & Seafood items found.")
+
+    st.markdown("---")
+
+    # Produce section
+    st.markdown("### Produce")
+    if produce_items:
+        produce_df = build_mp_table(produce_items, 'Produce')
+        st.dataframe(
+            produce_df.style.format(format_dict, na_rep='—'),
+            height=400, use_container_width=True
+        )
+
+        top_produce = produce_df.head(10)
+        if not top_produce.empty:
+            fig_prod = go.Figure()
+            fig_prod.add_trace(go.Bar(
+                name='Whole Foods', y=top_produce['Product'], x=top_produce['WF Price'],
+                orientation='h', marker_color='#1F3864',
+                text=top_produce['WF Price'].apply(lambda x: f'${x:.2f}'), textposition='inside',
+            ))
+            cheapest_prices = []
+            cheapest_labels = []
+            for _, r in top_produce.iterrows():
+                best_p = r['WF Price']
+                best_s = 'WF'
+                for store in stores:
+                    if pd.notna(r.get(store)) and r[store] < best_p:
+                        best_p = r[store]
+                        best_s = store
+                cheapest_prices.append(best_p)
+                cheapest_labels.append(f'${best_p:.2f} ({best_s})')
+            fig_prod.add_trace(go.Bar(
+                name='Cheapest Alt', y=top_produce['Product'], x=cheapest_prices,
+                orientation='h', marker_color='#548235',
+                text=cheapest_labels, textposition='inside',
+            ))
+            fig_prod.update_layout(
+                title='Top Produce: WF vs Cheapest',
+                barmode='group', xaxis=dict(title='Price ($)', gridcolor='#eee'),
+                yaxis=dict(autorange='reversed'),
+                height=450, margin=dict(l=250),
+                legend=dict(orientation='h', yanchor='bottom', y=1.02),
+            )
+            st.plotly_chart(fig_prod, use_container_width=True)
+    else:
+        st.info("No Produce items found.")
+
+    # Summary
+    if meat_items or produce_items:
+        monthly_combined = combined_sav / n_months if n_months else 0
+        st.success(f"**Meat & Produce combined:** ${combined_spend:,.0f} spent at WF. "
+                   f"Switching saves **${combined_sav:,.0f}** total (${monthly_combined:,.0f}/mo) — "
+                   f"**{combined_sav/combined_spend*100:.0f}%** of this category's spend.")
 
 # ── Tab 5: Price Explorer ──
 with tab5:
@@ -1017,7 +1234,7 @@ with tab8:
 
 5. **WF remains competitive** on niche organic items (specialty cheese, artisan products) where alternatives don't carry equivalent brands. The smallest-savings products are mostly items where WF is already price-matched.
 
-**Recommended strategy:** Keep WF for specialty/organic items and convenience. Shift staples (eggs, chicken, produce, pasta) to **{top_store}** or **Trader Joe's**. Buy fish from Alaska Wild.
+**Recommended strategy:** Keep WF for specialty/organic items and convenience. Shift staples (eggs, chicken, produce, pasta) to **{top_store}**, **Walmart**, or **Costco** (bulk buys). Buy fish from Alaska Wild. Costco offers the deepest discounts on bulk staples and proteins; Walmart wins on per-unit pricing for smaller households.
 """)
 
     st.markdown("---")
@@ -1027,9 +1244,9 @@ with tab8:
 
 - **Amazon Order History CSV** — exported from your Amazon account (`Your Amazon Orders/Order History.csv`).
   Whole Foods orders are identified by shipping option (`scheduled-houdini`, etc.).
-  Water, sodas, and bag fees are excluded.
+  Water, sodas, wine, and bag fees are excluded.
 - **Competitor Price Database** — ~50 product patterns with manually researched prices (March 2026)
-  from Harris Teeter, Aldi, Lidl, Trader Joe's, Amazon Fresh, MOM's Organic, and Safeway.
+  from Harris Teeter, Lidl, Costco, Walmart, Amazon Fresh, MOM's Organic, and Safeway.
 - **Store Tier Discounts** — for unmatched products, savings are estimated using
   Washington Consumers' Checkbook store-tier multipliers.
 
@@ -1044,8 +1261,9 @@ with tab8:
 
 | Store | vs WF | Source |
 |-------|-------|--------|
+| Costco | -35% | Bulk pricing comparison |
 | Lidl | -30% | Washington Consumers' Checkbook |
-| Trader Joe's | -20% | Washington Consumers' Checkbook |
+| Walmart | -28% | Washington Consumers' Checkbook |
 | Amazon Fresh | -15% | Prime member pricing |
 | Safeway | -10% | Washington Consumers' Checkbook |
 | MOM's Organic | -8% | Organic-to-organic comparison |
